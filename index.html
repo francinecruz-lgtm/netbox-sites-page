@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fabricantes por Site — NetBox</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f8;
+      color: #1a2535;
+      min-height: 100vh;
+      padding: 32px 20px;
+    }
+
+    header {
+      max-width: 1100px;
+      margin: 0 auto 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    header .logo {
+      width: 42px; height: 42px;
+      background: #1F4E79;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: #fff;
+    }
+    header h1 { font-size: 22px; font-weight: 700; color: #1F4E79; }
+    header p  { font-size: 13px; color: #6b7a8d; margin-top: 2px; }
+
+    .controls {
+      max-width: 1100px;
+      margin: 0 auto 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1; min-width: 220px;
+      padding: 9px 14px;
+      border: 1.5px solid #cdd5e0;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+      transition: border-color .2s;
+    }
+    .search-box:focus { border-color: #1F4E79; }
+
+    .filter-group {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #cdd5e0;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .15s;
+      font-weight: 500;
+    }
+    .filter-btn:hover  { border-color: #1F4E79; color: #1F4E79; }
+    .filter-btn.active { background: #1F4E79; color: #fff; border-color: #1F4E79; }
+
+    .filter-btn.aruba.active   { background: #2e7d32; border-color: #2e7d32; }
+    .filter-btn.juniper.active { background: #f57f17; border-color: #f57f17; }
+    .filter-btn.cisco.active   { background: #1565c0; border-color: #1565c0; }
+    .filter-btn.ruckus.active  { background: #880e4f; border-color: #880e4f; }
+
+    .card-grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .site-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      overflow: hidden;
+      transition: box-shadow .2s;
+    }
+    .site-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.13); }
+    .site-card.hidden { display: none; }
+
+    .card-header {
+      background: #1F4E79;
+      color: #fff;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-header .facility { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+    .card-header .site-name { font-size: 12px; opacity: .8; margin-top: 2px; }
+    .card-header .total-badge {
+      background: rgba(255,255,255,.2);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .card-body { padding: 14px 18px; }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      border-radius: 7px;
+      margin-bottom: 5px;
+      gap: 8px;
+    }
+    .row:last-child { margin-bottom: 0; }
+
+    .row.aruba   { background: #e8f5e9; }
+    .row.juniper { background: #fffde7; }
+    .row.cisco   { background: #e3f2fd; }
+    .row.ruckus  { background: #fce4ec; }
+    .row.other   { background: #f5f5f5; }
+
+    .mfr-badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      min-width: 62px;
+      text-align: center;
+    }
+    .aruba   .mfr-badge { background: #2e7d32; color: #fff; }
+    .juniper .mfr-badge { background: #f57f17; color: #fff; }
+    .cisco   .mfr-badge { background: #1565c0; color: #fff; }
+    .ruckus  .mfr-badge { background: #880e4f; color: #fff; }
+    .other   .mfr-badge { background: #555; color: #fff; }
+
+    .func-label {
+      flex: 1;
+      font-size: 13px;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .func-icon { font-size: 15px; }
+
+    .qty-badge {
+      background: #1F4E79;
+      color: #fff;
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      min-width: 34px;
+      text-align: center;
+    }
+
+    .not-found {
+      max-width: 1100px;
+      margin: 24px auto 0;
+      background: #fff3e0;
+      border: 1.5px solid #ffb74d;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 13px;
+      color: #e65100;
+    }
+    .not-found strong { font-weight: 700; }
+
+    .summary-bar {
+      max-width: 1100px;
+      margin: 0 auto 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .summary-chip {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .summary-chip .num { font-size: 20px; font-weight: 700; color: #1F4E79; }
+    .summary-chip .lbl { color: #6b7a8d; font-size: 12px; }
+
+    .no-results {
+      max-width: 1100px;
+      margin: 0 auto;
+      text-align: center;
+      color: #9ca3af;
+      padding: 40px;
+      font-size: 15px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">&#128246;</div>
+  <div>
+    <h1>Fabricantes por Site</h1>
+    <p>Switches &amp; Access Points — NetBox</p>
+  </div>
+</header>
+
+<div class="summary-bar" id="summaryBar"></div>
+
+<div class="controls">
+  <input class="search-box" type="text" id="searchInput" placeholder="&#128269; Buscar facility, site ou fabricante..." />
+  <div class="filter-group" id="filterGroup">
+    <button class="filter-btn active" data-filter="all">Todos</button>
+    <button class="filter-btn aruba"   data-filter="Aruba">Aruba</button>
+    <button class="filter-btn juniper" data-filter="Juniper">Juniper</button>
+    <button class="filter-btn cisco"   data-filter="Cisco">Cisco</button>
+    <button class="filter-btn ruckus"  data-filter="Ruckus">Ruckus</button>
+  </div>
+</div>
+
+<div class="card-grid" id="cardGrid"></div>
+<div class="no-results" id="noResults">Nenhum resultado encontrado.</div>
+
+<div class="not-found">
+  <strong>&#9888; Não encontrados no NetBox:</strong> SPR9, SBA1, SPE1
+</div>
+
+<script>
+const DATA = [["SRD1","Porto Velho","Aruba","Access Point",12],["SRD1","Porto Velho","Cisco","Access Switch",2],["SRD1","Porto Velho","Cisco","Core Switch",2],["SRJ8","Niteroi","Aruba","Access Point",22],["SRJ8","Niteroi","Cisco","Access Switch",1],["SRJ8","Niteroi","Cisco","Core Switch",2],["SGO3","Hidrolandia 01","Juniper","Access Point",56],["SGO3","Hidrolandia 01","Juniper","Access Switch",2],["SGO3","Hidrolandia 01","Juniper","Core Switch",2],["SMN1","Sao Luis","Juniper","Access Point",34],["SMN1","Sao Luis","Juniper","Access Switch",2],["SMN1","Sao Luis","Juniper","Core Switch",2],["SSP45","Itaquera","Juniper","Access Point",22],["SSP45","Itaquera","Juniper","Access Switch",2],["SSP45","Itaquera","Juniper","Core Switch",2],["SRJ2","Queimados","Aruba","Access Point",48],["SRJ2","Queimados","Cisco","Access Switch",1],["SRJ2","Queimados","Cisco","Core Switch",2],["SRJ2","Queimados","Ruckus","Access Switch",4],["SRS9","Nova Santa Rita XD","Juniper","Access Point",35],["SRS9","Nova Santa Rita XD","Juniper","Access Switch",2],["SRS9","Nova Santa Rita XD","Juniper","Core Switch",2],["SSP36","Piracicaba","Aruba","Access Point",14],["SSP36","Piracicaba","Cisco","Access Switch",2],["SSP36","Piracicaba","Ruckus","Core Switch",2],["SMS2","Dourados","Aruba","Access Point",26],["SMS2","Dourados","Cisco","Access Switch",1],["SMS2","Dourados","Cisco","Core Switch",2],["SMS2","Dourados","Ruckus","Access Switch",1],["SSP7","Zona Oeste","Aruba","Access Point",21],["SSP7","Zona Oeste","Cisco","Core Switch",2],["SSP7","Zona Oeste","Ruckus","Access Switch",2],["SRJ10","RJ Barra Jacarepagua","Aruba","Access Point",75],["SRJ10","RJ Barra Jacarepagua","Cisco","Access Switch",4],["SRJ10","RJ Barra Jacarepagua","Cisco","Core Switch",2],["SRS4","Caxias do Sul","Aruba","Access Point",32],["SRS4","Caxias do Sul","Cisco","Core Switch",2],["SRS4","Caxias do Sul","Ruckus","Access Switch",1],["SMG9","Varginha","Aruba","Access Point",22],["SMG9","Varginha","Cisco","Switch",2],["SMG9","Varginha","Ruckus","Access Switch",1],["SMG9","Varginha","Ruckus","Core Switch",2]];
+
+const FUNC_ICONS = {
+  "Access Point":    "📶",
+  "Access Switch":   "🔀",
+  "Core Switch":     "🖧",
+  "Distribution Switch": "🔗",
+  "Switch":          "🔀",
+};
+
+function mfrClass(mfr) {
+  return { Aruba: "aruba", Juniper: "juniper", Cisco: "cisco", Ruckus: "ruckus" }[mfr] || "other";
+}
+
+// Group by site
+const siteMap = {};
+DATA.forEach(([fac, name, mfr, func, qty]) => {
+  if (!siteMap[fac]) siteMap[fac] = { name, rows: [] };
+  siteMap[fac].rows.push({ mfr, func, qty });
+});
+
+// Summary
+const totals = {};
+DATA.forEach(([,, mfr,, qty]) => totals[mfr] = (totals[mfr] || 0) + qty);
+const totalAll = DATA.reduce((s, r) => s + r[4], 0);
+const summaryBar = document.getElementById("summaryBar");
+const summaryItems = [
+  { num: Object.keys(siteMap).length, lbl: "Sites" },
+  { num: totalAll, lbl: "Dispositivos" },
+  ...Object.entries(totals).sort((a,b) => b[1]-a[1]).map(([m, n]) => ({ num: n, lbl: m }))
+];
+summaryItems.forEach(({ num, lbl }) => {
+  summaryBar.innerHTML += `<div class="summary-chip"><span class="num">${num}</span><span class="lbl">${lbl}</span></div>`;
+});
+
+// Render cards
+const grid = document.getElementById("cardGrid");
+Object.entries(siteMap).forEach(([facility, { name, rows }]) => {
+  const total = rows.reduce((s, r) => s + r.qty, 0);
+  const mfrs = [...new Set(rows.map(r => r.mfr))];
+  const card = document.createElement("div");
+  card.className = "site-card";
+  card.dataset.facility = facility.toLowerCase();
+  card.dataset.name = name.toLowerCase();
+  card.dataset.mfrs = mfrs.join(",").toLowerCase();
+
+  const rowsHtml = rows.map(({ mfr, func, qty }) => `
+    <div class="row ${mfrClass(mfr)}">
+      <span class="mfr-badge">${mfr}</span>
+      <span class="func-label">
+        <span class="func-icon">${FUNC_ICONS[func] || "📦"}</span>${func}
+      </span>
+      <span class="qty-badge">${qty}</span>
+    </div>`).join("");
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="facility">${facility}</div>
+        <div class="site-name">${name}</div>
+      </div>
+      <span class="total-badge">${total} devices</span>
+    </div>
+    <div class="card-body">${rowsHtml}</div>`;
+  grid.appendChild(card);
+});
+
+// Filter & Search
+let activeFilter = "all";
+
+function applyFilters() {
+  const q = document.getElementById("searchInput").value.toLowerCase().trim();
+  const cards = document.querySelectorAll(".site-card");
+  let visible = 0;
+  cards.forEach(card => {
+    const matchSearch = !q || card.dataset.facility.includes(q) || card.dataset.name.includes(q) || card.dataset.mfrs.includes(q);
+    const matchFilter = activeFilter === "all" || card.dataset.mfrs.includes(activeFilter.toLowerCase());
+    if (matchSearch && matchFilter) { card.classList.remove("hidden"); visible++; }
+    else card.classList.add("hidden");
+  });
+  document.getElementById("noResults").style.display = visible === 0 ? "block" : "none";
+}
+
+document.getElementById("searchInput").addEventListener("input", applyFilters);
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeFilter = btn.dataset.filter;
+    applyFilters();
+  });
+});
+</script>
+</body>
+</html>
